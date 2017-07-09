@@ -17,6 +17,7 @@ myAPIURL=$3
 
 while /bin/true; do
   # Call the API in get mode to get the IP address
+  date
   curl -s "https://$myAPIURL?mode=get"
   echo
   myIP=`curl -s  "https://$myAPIURL?mode=get" | egrep -o '[0-9\.]+'`
