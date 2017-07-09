@@ -6,7 +6,9 @@ import json
 import re
 import hashlib
 import boto3
+import logging
 
+logger = logging.getLogger()
 # Tell the script where to find the configuration file.
 config_s3_region = 'us-west-2'
 config_s3_bucket = 'my_bucket_name'
@@ -65,13 +67,14 @@ def route53_client(execution_mode, aws_region, route_53_zone_id,
             StartRecordType=route_53_record_type,
             MaxItems='2'
         )
+        logger.error(current_route53_record_set)
         # boto3 returns a dictionary with a nested list of dictionaries
         # see: http://boto3.readthedocs.org/en/latest/reference/services/
         # route53.html#Route53.Client.list_resource_record_sets
         # Parse the dict to find the current IP for the hostname, if it exists.
         # If it doesn't exist, the function returns False.
         for eachRecord in current_route53_record_set['ResourceRecordSets']:
-            if eachRecord['Name'] == route_53_record_name:
+            if eachRecord['Name'] == route_53_record_name and eachRecord['Type'] == route_53_record_type:
                 # If there's a single record, pass it along.
                 if len(eachRecord['ResourceRecords']) == 1:
                     for eachSubRecord in eachRecord['ResourceRecords']:
@@ -123,7 +126,8 @@ def run_set_mode(set_hostname, validation_hash, source_ip):
     # Try to read the config, and error if you can't.
     try:
         full_config = read_s3_config()
-    except:
+    except Exception, e:
+        logger.error(e)
         return_status = 'fail'
         return_message = 'There was an issue finding '\
             'or reading the S3 config file.'

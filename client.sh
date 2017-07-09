@@ -14,10 +14,18 @@ fi
 myHostname=$1
 mySharedSecret=$2
 myAPIURL=$3
-# Call the API in get mode to get the IP address
-myIP=`curl -q -s  "https://$myAPIURL?mode=get" | egrep -o '[0-9\.]+'`
-# Build the hashed token
-myHash=`echo -n $myIP$myHostname$mySharedSecret | shasum -a 256 | awk '{print $1}'`
-# Call the API in set mode to update Route 53
-curl -q -s "https://$myAPIURL?mode=set&hostname=$myHostname&hash=$myHash"
-echo
+
+while /bin/true; do
+  # Call the API in get mode to get the IP address
+  curl -s "https://$myAPIURL?mode=get"
+  echo
+  myIP=`curl -s  "https://$myAPIURL?mode=get" | egrep -o '[0-9\.]+'`
+  # Build the hashed token
+  echo $myIP $myHostname $mySharedSecret
+  myHash=`echo -n $myIP$myHostname$mySharedSecret | sha256sum - | awk '{print $1}'`
+  # Call the API in set mode to update Route 53
+  curl -s "https://$myAPIURL?mode=set&hostname=$myHostname&hash=$myHash"
+  echo
+
+  sleep 600
+done
